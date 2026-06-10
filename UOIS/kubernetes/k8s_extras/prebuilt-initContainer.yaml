@@ -1,0 +1,7 @@
+initContainers:
+  - name: init-systemdata
+    image: tadblack/systemdata:latest
+    command: ["cp", "/systemdata.json", "/data/systemdata.json"]
+    volumeMounts:
+      - name: shared-data-vol
+        mountPath: /mnt

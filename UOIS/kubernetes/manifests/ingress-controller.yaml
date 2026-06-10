@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: main-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-redirect-from: "http://uois/"
+    nginx.ingress.kubernetes.io/proxy-redirect-to: "https://uois/"
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "auth-route"
+    nginx.ingress.kubernetes.io/session-cookie-expires: "14400"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "14400"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - "*.unob"
+        - "unob"
+      secretName: unob-tls
+  rules:
+    - host: uois
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 33001
+
+          - path: /api/gql
+            pathType: Prefix
+            backend:
+              service:
+                name: apollo
+                port:
+                  number: 3000
+
+    - host: pgadmin.uois
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pgadmin
+                port:
+                  number: 31122

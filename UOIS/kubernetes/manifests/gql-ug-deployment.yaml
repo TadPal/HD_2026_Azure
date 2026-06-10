@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Users\user\Documents\UNOB\Diplomka\Kompose\kompose.exe convert -f DockerStack/kubernetes_hd2026/docker-compose.k8.hd2026.yml -o DockerStack/kubernetes_hd2026/manifests/
+    kompose.service.type: ClusterIP
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: gql-ug
+  name: gql-ug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: gql-ug
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Users\user\Documents\UNOB\Diplomka\Kompose\kompose.exe convert -f DockerStack/kubernetes_hd2026/docker-compose.k8.hd2026.yml -o DockerStack/kubernetes_hd2026/manifests/
+        kompose.service.type: ClusterIP
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: gql-ug
+    spec:
+      initContainers:
+        - name: init-systemdata
+          image: tadblack/systemdata:latest
+          command: ["cp", "/data/systemdata.json", "/mnt/systemdata.json"]
+          volumeMounts:
+            - name: shared-data-vol
+              mountPath: /mnt
+      containers:
+        - env:
+            - name: ADMIN_DEFAULT_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  key: ADMIN_DEFAULT_EMAIL
+                  name: common-env
+            - name: ADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: ADMIN_DEFAULT_PASSWORD
+                  name: common-env
+            - name: DEMO
+              value: "False"
+            - name: DEMODATA
+              value: "False"
+            - name: GQLUG_ENDPOINT_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: GQLUG_ENDPOINT_URL
+                  name: common-env
+            - name: GQL_PROXY
+              valueFrom:
+                configMapKeyRef:
+                  key: GQL_PROXY
+                  name: common-env
+            - name: JWTPUBLICKEYURL
+              valueFrom:
+                configMapKeyRef:
+                  key: JWTPUBLICKEYURL
+                  name: common-env
+            - name: JWTRESOLVEUSERPATHURL
+              valueFrom:
+                configMapKeyRef:
+                  key: JWTRESOLVEUSERPATHURL
+                  name: common-env
+            - name: PGSSLMODE
+              valueFrom:
+                configMapKeyRef:
+                  key: PGSSLMODE
+                  name: common-env
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_DB
+                  name: common-env
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_HOST
+                  name: common-env
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: db-secrets
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: common-env
+            - name: SALT
+              valueFrom:
+                configMapKeyRef:
+                  key: SALT
+                  name: common-env
+            - name: AZURE_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  key: AZURE_CLIENT_ID
+                  name: common-env
+            - name: AZURE_CLIENT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  key: AZURE_CLIENT_SECRET
+                  name: common-env
+            - name: AZURE_TENANT_ID
+              valueFrom:
+                configMapKeyRef:
+                  key: AZURE_TENANT_ID
+                  name: common-env
+            - name: AZURE_REDIRECT_URI
+              valueFrom:
+                configMapKeyRef:
+                  key: AZURE_REDIRECT_URI
+                  name: common-env
+            - name: AZURE_SCOPES
+              valueFrom:
+                configMapKeyRef:
+                  key: AZURE_SCOPES
+                  name: common-env
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: REDIS_HOST
+                  name: common-env
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: REDIS_PORT
+                  name: common-env
+          image: jakubvf/gql_ug:msentra
+          imagePullPolicy: "Always"
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'curl -f -H ''Content-Type: application/json'' -X POST -d ''{"query":"query{__schema{types{name}}}"}'' http://localhost:8000/gql || exit 1'
+            failureThreshold: 3
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: gql-ug
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          volumeMounts:
+            - name: shared-data-vol
+              mountPath: /app/systemdata.json
+              subPath: systemdata.json
+      restartPolicy: Always
+      volumes:
+        - name: shared-data-vol
+          emptyDir: {}

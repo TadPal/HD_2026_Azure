@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+  namespace: default
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: db-backup
+              image: postgres:16-alpine
+              envFrom:
+                - configMapRef:
+                    name: common-env
+              env:
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-secrets
+                      key: POSTGRES_PASSWORD
+                - name: SSH_PRIVATE_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-secrets
+                      key: SSH_PRIVATE_KEY
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  echo "Starting backup process..."
+
+                  # Install SSH client
+                  apk add --no-cache openssh-client
+
+                  # Setup SSH
+                  mkdir -p ~/.ssh
+                  echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_rsa
+                  chmod 600 ~/.ssh/id_rsa
+
+                  ssh-keygen -l -f ~/.ssh/id_rsa
+
+                  # Extract host and port more reliably
+                  # POSTGRES_HOST is usually 'host:port'
+                  HOST_NAME=$(echo $POSTGRES_HOST | cut -d':' -f1)
+                  PORT_NUMBER=$(echo $POSTGRES_HOST | cut -d':' -f2)
+                  PORT_NUMBER=${PORT_NUMBER:-5432}
+
+                  # Export PGPASSWORD for pg_dump to use
+                  export PGPASSWORD=$POSTGRES_PASSWORD
+
+                  # Define backup names
+                  DATE=$(date +%Y%m%d_%H%M%S)
+
+                  # Databases to backup (matching Terraform resources)
+                  DB_NAMES="data credentials"
+
+                  for DB in $DB_NAMES; do
+                    BACKUP_FILE="uois_${DB}_$DATE.sql.gz"
+
+                    pg_dump -h "$HOST_NAME" -p "$PORT_NUMBER" -U "$POSTGRES_USER" -d "$DB" --no-password | gzip > "/tmp/$BACKUP_FILE"
+                    
+                    echo "Transferring $BACKUP_FILE to remote server..."
+                    scp -P $BACKUP_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa "/tmp/$BACKUP_FILE" "$BACKUP_USER@$BACKUP_HOST:/Azure/backup/"
+                    
+                    # Cleanup local temp file
+                    rm "/tmp/$BACKUP_FILE"
+                  done
+
+                  echo "Backup process completed successfully."
+          restartPolicy: OnFailure
