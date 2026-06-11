@@ -132,6 +132,11 @@ spec:
                 configMapKeyRef:
                   key: REDIS_PORT
                   name: common-env
+            - name: JWT_KEY_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  key: JWT_KEY_SECRET
+                  name: common-env
           image: jakubvf/frontend:msentra
           imagePullPolicy: "Always"
           livenessProbe:

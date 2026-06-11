@@ -7,10 +7,6 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-redirect-from: "http://uois/"
     nginx.ingress.kubernetes.io/proxy-redirect-to: "https://uois/"
-    nginx.ingress.kubernetes.io/affinity: "cookie"
-    nginx.ingress.kubernetes.io/session-cookie-name: "auth-route"
-    nginx.ingress.kubernetes.io/session-cookie-expires: "14400"
-    nginx.ingress.kubernetes.io/session-cookie-max-age: "14400"
 spec:
   ingressClassName: nginx
   tls:
