@@ -20,6 +20,13 @@ variable "node_count" {
   default     = 1 # DEV - 1, PROD - 3
 }
 
+variable "systempool_node_count" {
+  type        = number
+  description = "The initial quantity of nodes for system node pool."
+  default     = 1 # DEV - 1, PROD - 2
+}
+
+
 variable "msi_id" {
   type        = string
   description = "The Managed Service Identity ID. Set this value if you're running this example using Managed Identity as the authentication method."
@@ -52,7 +59,7 @@ variable "db_password" {
 
 variable "b64_backup_ssh_key" {
   type        = string
-  description = "SSH Key for the backup server"
+  description = "Base64 encoded SSH Key for backup server uploads"
   sensitive   = true
 }
 

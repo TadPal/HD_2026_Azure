@@ -5,17 +5,17 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-redirect-from: "http://uois/"
-    nginx.ingress.kubernetes.io/proxy-redirect-to: "https://uois/"
+    nginx.ingress.kubernetes.io/proxy-redirect-from: "http://${UOIS_HOSTNAME}/"
+    nginx.ingress.kubernetes.io/proxy-redirect-to: "https://${UOIS_HOSTNAME}/"
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - "*.unob"
-        - "unob"
+        - "*.${UOIS_HOSTNAME}"
+        - "${UOIS_HOSTNAME}"
       secretName: unob-tls
   rules:
-    - host: uois
+    - host: ${UOIS_HOSTNAME}
       http:
         paths:
           - path: /
@@ -34,7 +34,7 @@ spec:
                 port:
                   number: 3000
 
-    - host: pgadmin.uois
+    - host: pgadmin.${UOIS_HOSTNAME}
       http:
         paths:
           - path: /

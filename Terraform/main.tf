@@ -108,7 +108,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     # enable_auto_scaling = true
     # min_count           = var.node_count
     # max_count           = 3
-    node_count                   = var.node_count
+    node_count                   = var.systempool_node_count
     only_critical_addons_enabled = true
   }
 
@@ -218,9 +218,15 @@ resource "kubernetes_secret_v1" "db_secrets" {
   depends_on = [azurerm_kubernetes_cluster.k8s]
 }
 
+locals {
+  common_env_lines = split("\n", file("${var.config_path}/common.env"))
+  uois_hostname_raw = [for line in local.common_env_lines : split("=", line)[1] if startswith(trimspace(line), "UOIS_HOSTNAME=")][0]
+  uois_hostname = trimspace(split("#", local.uois_hostname_raw)[0])
+}
+
 resource "kubectl_manifest" "deploy_all" {
   for_each  = fileset(var.manifests_path, "*.yaml")
-  yaml_body = file("${var.manifests_path}/${each.value}")
+  yaml_body = each.value == "ingress-controller.yaml" ? templatefile("${var.manifests_path}/${each.value}", { UOIS_HOSTNAME = local.uois_hostname }) : file("${var.manifests_path}/${each.value}")
 
   depends_on = [
     helm_release.ingress_nginx,
